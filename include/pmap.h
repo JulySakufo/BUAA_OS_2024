@@ -75,5 +75,5 @@ extern struct Page *pages;
 
 void physical_memory_manage_check(void);
 void page_check(void);
-u_int page_filter(Pde *pgdir, u_long va_lower_limit, u_long va_upper_limit, u_int num);
+
 #endif /* _PMAP_H_ */
