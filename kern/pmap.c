@@ -139,7 +139,7 @@ int page_alloc(struct Page **new) { //现在还没有建立内存管理机制，
 	 * Hint: use `memset`. */
 	/* Exercise 2.4: Your code here. (2/2) */
 	/*考虑 kseg0 段的性质，该段上的虚拟地址被线性映射到物理地址，操作系统通过访问该段的地址来直接操作物理内存,例如当写虚拟地址 0x80012340时，由于 kseg0 段的性质，事实上在写物理地址 0x12340。*/
-	memset((void*)page2kva(pp), 0, sizeof(struct Page));//因此此处对page2kva清0，经过映射，实际上是对物理空间做操作了
+	memset((void*)page2kva(pp), 0, PAGE_SIZE);//因此此处对page2kva清0，经过映射，实际上是对物理空间做操作了
 	*new = pp;
 	return 0;
 }

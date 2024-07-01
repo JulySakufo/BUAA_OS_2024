@@ -17,7 +17,7 @@
 void schedule(int yield) {
 	static int count = 0; // remaining time slices of current env
 	struct Env *e = curenv;
-	static int flag = 0;
+
 	/* We always decrease the 'count' by 1.
 	 *
 	 * If 'yield' is set, or 'count' has been decreased to 0, or 'e' (previous 'curenv') is
@@ -35,22 +35,15 @@ void schedule(int yield) {
 	 *   'TAILQ_FIRST', 'TAILQ_REMOVE', 'TAILQ_INSERT_TAIL'
 	 */
 	/* Exercise 3.12: Your code here. */
-	if(e!=NULL){
-		e->env_count = e->env_count + ((struct Trapframe *)KSTACKTOP - 1)->cp0_count;
-	}
 	if(yield!=0 || count==0 || e==NULL || e->env_status!=ENV_RUNNABLE){ //需要切换进程
 		if(!TAILQ_EMPTY(&env_sched_list)){
 			if(e!=NULL){ //切换进程的时候才需要移动位置
 				if(e->env_status == ENV_RUNNABLE){
 					TAILQ_REMOVE(&env_sched_list, e, env_sched_link); //将e从调度队列中取出来，把头部让给下一个
 					TAILQ_INSERT_TAIL(&env_sched_list, e, env_sched_link); //插回队列尾部
-					(e->env_sched_count)++; //sched count +1
-					//e->env_tf.cp0_count = e->env_tf.cp0_count + ((struct Trapframe *)KSTACKTOP - 1)->cp0_count;
 				}else{
 					TAILQ_REMOVE(&env_sched_list, e, env_sched_link); //不是可runnable的，直接移除调度队列
 				}
-			}else{
-				flag=1;
 			}
 			e = TAILQ_FIRST(&env_sched_list); //拿出进程的时候无需remove和insert，用完了再移动
 			count = e->env_pri;

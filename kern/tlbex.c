@@ -77,7 +77,7 @@ void _do_tlb_refill(u_long *pentrylo, u_int va, u_int asid) {
  *   The user entry should handle this TLB Mod exception and restore the context.
  */
 void do_tlb_mod(struct Trapframe *tf) {
-	struct Trapframe tmp_tf = *tf;
+	struct Trapframe tmp_tf = *tf; //用户异常栈，tf是用户正常栈
 
 	if (tf->regs[29] < USTACKTOP || tf->regs[29] >= UXSTACKTOP) {
 		tf->regs[29] = UXSTACKTOP;
@@ -91,7 +91,7 @@ void do_tlb_mod(struct Trapframe *tf) {
 		tf->regs[29] -= sizeof(tf->regs[4]);
 		// Hint: Set 'cp0_epc' in the context 'tf' to 'curenv->env_user_tlb_mod_entry'.
 		/* Exercise 4.11: Your code here. */
-
+		tf->cp0_epc = curenv->env_user_tlb_mod_entry; //进入用户异常处理函数，内核让用户自己去处理COW的页写入异常,设置地址返回时到那里去进行即可
 	} else {
 		panic("TLB Mod but no user handler registered");
 	}

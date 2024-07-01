@@ -115,7 +115,12 @@ int envid2env(u_int envid, struct Env **penv, int checkperm) {
 	 *   You may want to use 'ENVX'.
 	 */
 	/* Exercise 4.3: Your code here. (1/2) */
-
+	if(envid==0){
+		*penv = curenv;
+		return 0;
+	}else{
+		e = &envs[ENVX(envid)];
+	}
 	if (e->env_status == ENV_FREE || e->env_id != envid) {
 		return -E_BAD_ENV;
 	}
@@ -127,7 +132,11 @@ int envid2env(u_int envid, struct Env **penv, int checkperm) {
 	 *   If violated, return '-E_BAD_ENV'.
 	 */
 	/* Exercise 4.3: Your code here. (2/2) */
-
+	if(checkperm){ //当checkperm!=0的检测
+		if((e->env_id!=curenv->env_id) && (e->env_parent_id!=curenv->env_id)){ //合法的e要么是curenv要么是curenv的子进程，都不是则不合法
+			return -E_BAD_ENV;
+		}
+	} 
 	/* Step 3: Assign 'e' to '*penv'. */
 	*penv = e;
 	return 0;
@@ -361,9 +370,6 @@ struct Env *env_create(const void *binary, size_t size, int priority) {
 	/* Exercise 3.7: Your code here. (2/3) */
 	e->env_pri = priority;
 	e->env_status = ENV_RUNNABLE;
-	e->env_sched_count = 1;//initialize the sched count
-	e->env_runs = 0; //initialize the env_runs
-	e->env_count = 0;
 	/* Step 3: Use 'load_icode' to load the image from 'binary', and insert 'e' into
 	 * 'env_sched_list' using 'TAILQ_INSERT_HEAD'. */
 	/* Exercise 3.7: Your code here. (3/3) */
@@ -450,8 +456,6 @@ extern void env_pop_tf(struct Trapframe *tf, u_int asid) __attribute__((noreturn
  */
 void env_run(struct Env *e) {
 	assert(e->env_status == ENV_RUNNABLE);
-	//printk("cp0_count:%d\nCP0_count:%d\n",e->env_tf.cp0_count,((struct Trapframe *)KSTACKTOP - 1)->cp0_count);
-	//e->env_tf.cp0_count = e->env_tf.cp0_count+((struct Trapframe *)KSTACKTOP - 1)->cp0_count;
 	// WARNING BEGIN: DO NOT MODIFY FOLLOWING LINES!
 #ifdef MOS_PRE_ENV_RUN
 	MOS_PRE_ENV_RUN_STMT
@@ -465,13 +469,12 @@ void env_run(struct Env *e) {
 	 */
 	if (curenv) {
 		curenv->env_tf = *((struct Trapframe *)KSTACKTOP - 1);
-		//curenv->env_tf.cp0_count = curenv->env_tf.cp0_count + ((struct Trapframe *)KSTACKTOP - 1)->cp0_count;
 	}
 
 	/* Step 2: Change 'curenv' to 'e'. */
 	curenv = e;
 	curenv->env_runs++; // lab6
-	//e->env_tf.cp0_count = e->env_tf.cp0_count + ((struct Trapframe *)KSTACKTOP - 1)->cp0_count;
+
 	/* Step 3: Change 'cur_pgdir' to 'curenv->env_pgdir', switching to its address space. */
 	/* Exercise 3.8: Your code here. (1/2) */
 	cur_pgdir = curenv->env_pgdir;
@@ -559,7 +562,6 @@ void envid2env_check() {
 	int re;
 	pe2->env_status = ENV_FREE;
 	re = envid2env(pe2->env_id, &pe, 0);
-
 	assert(re == -E_BAD_ENV);
 
 	pe2->env_status = ENV_RUNNABLE;
@@ -571,11 +573,4 @@ void envid2env_check() {
 	re = envid2env(pe2->env_id, &pe, 1);
 	assert(re == -E_BAD_ENV);
 	printk("envid2env() work well!\n");
-}
-
-void env_stat(struct Env *e, u_int *pri, u_int *scheds, u_int *runs, u_int *clocks){
-	*pri = e->env_pri;
-	*scheds = e->env_sched_count;
-	*runs = e->env_runs;
-	*clocks = e->env_count;
 }
