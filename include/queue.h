@@ -66,6 +66,7 @@
  * this very LIST_ENTRY, so that if we want to remove this list entry,
  * we can do *le_prev = le_next to update the structure pointing at us.
  */
+ //list_entry意思是链表项，链表的一项
 #define LIST_ENTRY(type)                                                                           \
 	struct {                                                                                   \
 		struct type *le_next;  /* next element */                                          \
@@ -112,9 +113,17 @@
  * Step 3: assign 'listelm.next' from a proper value.
  * Step 4: assign 'elm.pre' from a proper value.
  */
+ /* Exercise 2.2: Your code here. */
+ //画个图还是挺好写的
 #define LIST_INSERT_AFTER(listelm, elm, field)                                                     \
-	/* Exercise 2.2: Your code here. */  \
-
+ 	do {											   \
+		LIST_NEXT((elm), field) = LIST_NEXT((listelm), field);				   \
+		if(LIST_NEXT((listelm),field)!=NULL){						   \
+			LIST_NEXT((listelm),field)->field.le_prev = &LIST_NEXT((elm),field);          \
+			LIST_NEXT((listelm),field) = elm;					   \
+			elm->field.le_prev = &LIST_NEXT((listelm),field);				   \
+		}										   \
+	} while (0) 										   \
 /*
  * Insert the element "elm" *before* the element "listelm" which is
  * already in the list.  The "field" name is the link element
@@ -127,7 +136,8 @@
 		*(listelm)->field.le_prev = (elm);                                                 \
 		(listelm)->field.le_prev = &LIST_NEXT((elm), field);                               \
 	} while (0)
-
+//nmd,第三行看了好久，写成*(listelm->field.le_prev)不好吗...,listelm->field.le_prev表示前一个节点的&le_next，此处解引用成为le_next，将elm的地址值赋给该指针变量...
+//无语了...
 /*
  * Insert the element "elm" at the head of the list named "head".
  * The "field" name is the link element as above.
@@ -141,7 +151,7 @@
 	} while (0)
 
 #define LIST_NEXT(elm, field) ((elm)->field.le_next)
-
+//这也挺无语的，不明白为啥非得搞个宏，一点对称美感都没有
 /*
  * Remove the element "elm" from the list.
  * The "field" name is the link element as above.

@@ -56,6 +56,5 @@ int readelf(const void *binary, size_t size) {
 		addr = shdr->sh_addr;//得到每一个节的地址
 		printf("%d:0x%x\n", i, addr);//计算addr
 	}
-
 	return 0;
 }

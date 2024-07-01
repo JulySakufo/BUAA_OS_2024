@@ -8,7 +8,7 @@
 
 extern Pde *cur_pgdir;
 
-LIST_HEAD(Page_list, Page);
+LIST_HEAD(Page_list, Page);//定义了名为Page_list的结构体，该结构体内有struct Page* lh_first，该指针指向一个Page结构体
 typedef LIST_ENTRY(Page) Page_LIST_entry_t;
 
 struct Page {
@@ -19,7 +19,7 @@ struct Page {
 	// page_alloc.  Pages allocated at boot time using pmap.c's "alloc"
 	// do not have valid reference count fields.
 
-	u_short pp_ref;
+	u_short pp_ref;//引用次数
 };
 
 extern struct Page *pages;
@@ -29,7 +29,7 @@ static inline u_long page2ppn(struct Page *pp) {
 	return pp - pages;
 }
 
-static inline u_long page2pa(struct Page *pp) {
+static inline u_long page2pa(struct Page *pp) { //通过页表来找到物理地址
 	return page2ppn(pp) << PGSHIFT;
 }
 
@@ -40,7 +40,7 @@ static inline struct Page *pa2page(u_long pa) {
 	return &pages[PPN(pa)];
 }
 
-static inline u_long page2kva(struct Page *pp) {
+static inline u_long page2kva(struct Page *pp) { //通过页表来找到虚拟地址，KADDR=PADDR+0x80000000,kaddr和paddr就是直接物理地址与虚拟地址加减0x80000000，不会涉及到页表映射的查找
 	return KADDR(page2pa(pp));
 }
 
@@ -75,5 +75,5 @@ extern struct Page *pages;
 
 void physical_memory_manage_check(void);
 void page_check(void);
-
+u_int page_filter(Pde *pgdir, u_long va_lower_limit, u_long va_upper_limit, u_int num);
 #endif /* _PMAP_H_ */
