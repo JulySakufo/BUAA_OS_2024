@@ -7,8 +7,7 @@
 #include <syscall.h>
 
 extern struct Env *curenv;
-int sems[15];
-int sems_valid[15] = {0};
+
 /* Overview:
  * 	This function is used to print a character on screen.
  *
@@ -373,7 +372,7 @@ int sys_ipc_recv(u_int dstva) {
  *   'sys_ipc_recv'.
  *   Return the original error when underlying calls fail.
  */
-int sys_ipc_try_send(u_int envid, u_int value, u_int srcva, u_int perm) { //当前进程发送给envid的进程
+int sys_ipc_try_send(u_int envid, u_int value, u_int srcva, u_int perm) {
 	struct Env *e;
 	struct Page *p;
 
@@ -456,9 +455,21 @@ int sys_cgetc(void) {
  *	|  IDE disk  | 0x180001f0 | 0x8    |
  *	* ---------------------------------*
  */
-int sys_write_dev(u_int va, u_int pa, u_int len) {
+int sys_write_dev(u_int va, u_int pa, u_int len) { // va -> pa
 	/* Exercise 5.1: Your code here. (1/2) */
-
+	if(is_illegal_va_range(va, len) || !(len==1||len==2||len==4)){
+		return -E_INVAL;
+	} //检查va，len的合法性
+	if(!((pa>=0x180003f8 && pa+len<=0x18000418) || (pa>=0x180001f0 && pa+len<=0x180001f8))){
+		return -E_INVAL;
+	} //检查pa的合法性
+	if(len==1){
+		iowrite8(*((uint8_t *)va), pa);
+	}else if(len==2){
+		iowrite16(*((uint16_t *)va), pa);
+	}else if(len==4){
+		iowrite32(*((uint32_t *)va), pa);
+	}
 	return 0;
 }
 
@@ -477,49 +488,21 @@ int sys_write_dev(u_int va, u_int pa, u_int len) {
  *  You can use 'is_illegal_va_range' to validate 'va'.
  *  You can use function 'ioread32', 'ioread16' and 'ioread8' to read data from device.
  */
-int sys_read_dev(u_int va, u_int pa, u_int len) {
+int sys_read_dev(u_int va, u_int pa, u_int len) { // pa -> va
 	/* Exercise 5.1: Your code here. (2/2) */
-
-	return 0;
-}
-
-void sys_sem_open(int sem_id, int n) {
-	// Lab 4-1-Exam: Your code here. (6/9)
-	if(sems_valid[sem_id]==0){
-		sems[sem_id] = n;
-		sems_valid[sem_id] = 1;
+	if(is_illegal_va_range(va, len) || !(len==1 || len==2 || len==4)){
+		return -E_INVAL;
+	} //检查va的合法性
+	if(!((pa>=0x180003f8 && pa+len<=0x18000418) || (pa>=0x180001f0 && pa+len<=0x180001f8))){
+		return -E_INVAL;
+	} //检查pa的合法性
+	if(len==1){
+		*((uint8_t *)va) = ioread8(pa);
+	}else if(len==2){
+		*((uint16_t *)va) = ioread16(pa);
+	}else if(len==4){
+		*((uint32_t *)va) = ioread32(pa);
 	}
-}
-
-int sys_sem_wait(int sem_id) {
-	// Lab 4-1-Exam: Your code here. (7/9)
-	if(sems_valid[sem_id] == 0){ //invalid
-		return -E_SEM_NOT_OPEN;
-	}
-	if(sems[sem_id]==0){
-		return 1;
-	}
-	if(sems[sem_id] > 0){
-		sems[sem_id]--;
-	}
-	return 0;
-}
-
-int sys_sem_post(int sem_id) {
-	// Lab 4-1-Exam: Your code here. (8/9)
-	if(sems_valid[sem_id] == 0){ //invalid
-		return -E_SEM_NOT_OPEN;
-	}
-	sems[sem_id]++;
-	return 0;
-}
-
-int sys_sem_kill(int sem_id) {
-	// Lab 4-1-Exam: Your code here. (9/9)
-	if(sems_valid[sem_id] == 0){ //invalid
-		return -E_SEM_NOT_OPEN;
-	}
-	sems_valid[sem_id] = 0; //make it invalid;
 	return 0;
 }
 
@@ -542,10 +525,6 @@ void *syscall_table[MAX_SYSNO] = {
     [SYS_cgetc] = sys_cgetc,
     [SYS_write_dev] = sys_write_dev,
     [SYS_read_dev] = sys_read_dev,
-    [SYS_sem_open] = sys_sem_open,
-    [SYS_sem_wait] = sys_sem_wait,
-    [SYS_sem_post] = sys_sem_post,
-    [SYS_sem_kill] = sys_sem_kill,
 };
 
 /* Overview:
