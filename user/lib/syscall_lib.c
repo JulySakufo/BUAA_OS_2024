@@ -74,3 +74,27 @@ int syscall_read_dev(void *va, u_int dev, u_int size) {
 	/* Exercise 5.2: Your code here. (2/2) */
 	return msyscall(SYS_read_dev, va, dev, size);
 }
+
+int syscall_add_job(u_int envid, char *cmd){
+	return msyscall(SYS_add_job, envid, cmd);
+}
+
+int syscall_list_job(){
+	return msyscall(SYS_list_job);
+}
+
+int syscall_finish_job(u_int envid){
+	return msyscall(SYS_finish_job, envid);
+}
+
+int syscall_kill_job(u_int jobid){
+	return msyscall(SYS_kill_job, jobid);
+}
+
+int syscall_wait(u_int envid){
+	return msyscall(SYS_wait, envid);
+}
+
+void syscall_exit(int value){
+	msyscall(SYS_exit, value);
+}

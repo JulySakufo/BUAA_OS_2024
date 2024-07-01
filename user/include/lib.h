@@ -14,7 +14,7 @@
 #define pages ((const volatile struct Page *)UPAGES)
 
 // libos
-void exit(void) __attribute__((noreturn));
+void exit(int value) __attribute__((noreturn));
 
 extern const volatile struct Env *env;
 
@@ -68,13 +68,19 @@ int syscall_ipc_recv(void *dstva);
 int syscall_cgetc(void);
 int syscall_write_dev(void *va, u_int dev, u_int len);
 int syscall_read_dev(void *va, u_int dev, u_int len);
+int syscall_add_job(u_int envid, char *cmd);
+int syscall_list_job();
+int syscall_finish_job(u_int envid);
+int syscall_kill_job(u_int jobid);
+int syscall_wait(u_int envid);
+void syscall_exit(int value);
 
 // ipc.c
 void ipc_send(u_int whom, u_int val, const void *srcva, u_int perm);
 u_int ipc_recv(u_int *whom, void *dstva, u_int *perm);
 
 // wait.c
-void wait(u_int envid);
+int wait(u_int envid);
 
 // console.c
 int opencons(void);
@@ -100,6 +106,7 @@ int fsipc_dirty(u_int, u_int);
 int fsipc_remove(const char *);
 int fsipc_sync(void);
 int fsipc_incref(u_int);
+int fsipc_create(const char *, u_int, struct Fd *);
 
 // fd.c
 int close(int fd);
@@ -118,8 +125,7 @@ int read_map(int fd, u_int offset, void **blk);
 int remove(const char *path);
 int ftruncate(int fd, u_int size);
 int sync(void);
-int copy(const char *src_path, const char *dst_path);
-int fsipc_copy(const char *,const char *);
+int create(const char *path, int f_type);
 
 #define user_assert(x)                                                                             \
 	do {                                                                                       \
@@ -138,5 +144,5 @@ int fsipc_copy(const char *,const char *);
 // Unimplemented open modes
 #define O_EXCL 0x0400  /* error if already exists */
 #define O_MKDIR 0x0800 /* create directory, not regular file */
-
+#define O_APPEND 0x1000 /*追加模式*/
 #endif

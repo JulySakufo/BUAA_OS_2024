@@ -33,4 +33,3 @@ void fs_sync(void);
 extern uint32_t *bitmap;
 int map_block(u_int);
 int alloc_block(void);
-int directory_copy(char *src_path, char *dst_path);

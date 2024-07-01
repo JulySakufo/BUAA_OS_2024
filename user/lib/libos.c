@@ -2,12 +2,13 @@
 #include <lib.h>
 #include <mmu.h>
 
-void exit(void) {
+void exit(int value) {
 	// After fs is ready (lab5), all our open files should be closed before dying.
 #if !defined(LAB) || LAB >= 5
 	close_all();
 #endif
-
+	syscall_exit(value);
+	syscall_finish_job(syscall_getenvid());
 	syscall_env_destroy(0);
 	user_panic("unreachable code");
 }
@@ -20,8 +21,7 @@ void libmain(int argc, char **argv) {
 	env = &envs[ENVX(syscall_getenvid())];
 
 	// call user main routine
-	main(argc, argv);
-
+	int value = main(argc, argv);
 	// exit gracefully
-	exit();
+	exit(value);
 }

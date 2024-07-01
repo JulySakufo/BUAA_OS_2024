@@ -7,7 +7,15 @@
 #include <syscall.h>
 
 extern struct Env *curenv;
-
+extern struct Env envs[NENV];
+int jobs_count;
+struct Job{
+	int job_id;
+	char job_status[20];
+	int env_id;
+	char cmd[1024];
+};
+struct Job jobs[20];
 /* Overview:
  * 	This function is used to print a character on screen.
  *
@@ -417,11 +425,12 @@ int sys_ipc_try_send(u_int envid, u_int value, u_int srcva, u_int perm) {
 }
 
 // XXX: kernel does busy waiting here, blocking all envs
-int sys_cgetc(void) {
-	int ch;
+int sys_cgetc(void) { //不再忙等，后台也能跑
+	return scancharc();
+	/*int ch;
 	while ((ch = scancharc()) == 0) {
 	}
-	return ch;
+	return ch;*/
 }
 
 /* Overview:
@@ -506,6 +515,61 @@ int sys_read_dev(u_int va, u_int pa, u_int len) { // pa -> va
 	return 0;
 }
 
+int sys_add_job(u_int envid, char *cmd){
+	jobs[jobs_count].job_id = jobs_count + 1;
+	strcpy(jobs[jobs_count].job_status, "Running");
+	jobs[jobs_count].env_id = envid;
+	strcpy(jobs[jobs_count].cmd, cmd);
+	jobs_count++;
+	return 0;
+}
+
+int sys_list_job(){
+	for(int i=0; i<jobs_count; i++){
+		printk("[%d] %-10s 0x%08x %s\n", jobs[i].job_id, jobs[i].job_status, jobs[i].env_id, jobs[i].cmd);
+	}
+	return 0;
+}
+
+int sys_finish_job(u_int envid){
+	//printk("my envid is %x\n", envid);
+	for(int i=0; i<jobs_count; i++){
+		if(jobs[i].env_id == envid){
+			strcpy(jobs[i].job_status, "Done");
+			break;
+		}
+	}
+	return 0;
+}
+
+int sys_kill_job(u_int jobid){
+	for(int i=0; i<jobs_count; i++){
+		if(jobs[i].job_id == jobid){
+			if(strcmp(jobs[i].job_status, "Done") == 0){
+				printk("fg: (0x%08x) not running\n", jobs[i].env_id);
+			}else{
+				strcpy(jobs[i].job_status, "Done");
+				sys_env_destroy(jobs[i].env_id); //关掉该进程
+			}
+			return 0;
+		}
+	}
+	printk("fg: job (%d) do not exist\n", jobid);
+	return 1;
+}
+
+int sys_wait(u_int envid){
+	struct Env *e = &envs[ENVX(envid)];
+	if(e->env_status == ENV_FREE){
+		return e->env_exit_value;
+	}
+	return -1;
+}
+
+void sys_exit(int value){
+	curenv->env_exit_value = value;
+}
+
 void *syscall_table[MAX_SYSNO] = {
     [SYS_putchar] = sys_putchar,
     [SYS_print_cons] = sys_print_cons,
@@ -525,6 +589,12 @@ void *syscall_table[MAX_SYSNO] = {
     [SYS_cgetc] = sys_cgetc,
     [SYS_write_dev] = sys_write_dev,
     [SYS_read_dev] = sys_read_dev,
+	[SYS_add_job] = sys_add_job,
+	[SYS_list_job] = sys_list_job,
+	[SYS_finish_job] = sys_finish_job,
+	[SYS_kill_job] = sys_kill_job,
+	[SYS_wait] = sys_wait,
+	[SYS_exit] = sys_exit,
 };
 
 /* Overview:

@@ -55,7 +55,7 @@ void _user_panic(const char *file, int line, const char *fmt, ...) {
 	vdebugf(fmt, ap);
 	va_end(ap);
 	debugf("\n");
-	exit();
+	exit(1);
 }
 
 void _user_halt(const char *file, int line, const char *fmt, ...) {

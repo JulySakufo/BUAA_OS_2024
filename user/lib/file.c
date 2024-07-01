@@ -76,7 +76,7 @@ int file_close(struct Fd *fd) {
 	// Tell the file server the dirty page.
 	for (i = 0; i < size; i += PTMAP) {
 		if ((r = fsipc_dirty(fileid, i)) < 0) {
-			debugf("cannot mark pages as dirty\n");
+			//debugf("cannot mark pages as dirty\n");
 			return r;
 		}
 	}
@@ -259,7 +259,13 @@ int sync(void) {
 	return fsipc_sync();
 }
 
-int copy(const char *src_path,const char *dst_path){
-   // Lab 5-2-Exam: Your code here. (2/6)
-   return fsipc_copy(src_path, dst_path);
+int create(const char *path, int f_type){ //touch.c调用
+	int r;
+	struct Fd *fd;
+	try(fd_alloc(&fd));
+	if((r = fsipc_open(path, O_RDONLY, fd)) < 0){ //如果文件不存在，就创建
+		return fsipc_create(path, f_type, fd); //fsipc的返回值，<0不成功，=0成功
+	}else{ //文件存在
+		return 1;
+	}
 }

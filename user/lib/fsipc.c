@@ -136,13 +136,14 @@ int fsipc_sync(void) {
 	return fsipc(FSREQ_SYNC, fsipcbuf, 0, 0);
 }
 
-int fsipc_copy(const char *src_path, const char *dst_path) {
-   // Lab 5-2-Exam: Your code here. (1/6)
-   if(strlen(src_path)==0 || strlen(src_path) > MAXPATHLEN || strlen(dst_path)==0 || strlen(dst_path) > MAXPATHLEN){
-	   return -E_BAD_PATH;
-   }
-   struct Fsreq_copy *req = (struct Fsreq_copy *)fsipcbuf;
-   strcpy(req->req_src_path, src_path);
-   strcpy(req->req_dst_path, dst_path);
-   return fsipc(FSREQ_COPY, req, 0, 0);
+int fsipc_create(const char *path, u_int f_type, struct Fd *fd){ //仿照open的行为,这里的f_type是文件的类型
+	u_int perm;
+	struct Fsreq_create *req;
+	req = (struct Fsreq_create *)fsipcbuf;
+	if(strlen(path) >= MAXPATHLEN){
+		return -E_BAD_PATH;
+	}
+	strcpy((char *)req->req_path, path);
+	req->f_type = f_type;
+	return fsipc(FSREQ_CREATE, req, fd, &perm);
 }

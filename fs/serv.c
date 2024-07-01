@@ -181,6 +181,10 @@ void serve_open(u_int envid, struct Fsreq_open *rq) {
 	o->o_mode = rq->req_omode;
 	ff->f_fd.fd_omode = o->o_mode;
 	ff->f_fd.fd_dev_id = devfile.dev_id;
+	if(o->o_mode & O_APPEND){ //可追加
+		struct Fd* fff = (struct Fd*)ff;
+		fff->fd_offset = f->f_size; //偏移量设置为文件原来的大小
+	}
 	ipc_send(envid, 0, o->o_ff, PTE_D | PTE_LIBRARY);
 }
 
@@ -334,15 +338,15 @@ void serve_sync(u_int envid) {
 	ipc_send(envid, 0, 0, 0);
 }
 
-void serve_copy(u_int envid, struct Fsreq_copy *rq){
-   // Lab 5-2-Exam: Your code here. (6/6)
-   int r;
-   if((r = directory_copy(rq->req_src_path, rq->req_dst_path)) < 0){
-	   ipc_send(envid, r, 0, 0);
-	   return;
-   }
-
-   ipc_send(envid, 0, 0, 0);
+void serve_create(u_int envid, struct Fsreq_create *rq){
+	int r;
+	struct File *f;
+	if((r = file_create(rq->req_path, &f))<0){ //只填充了f的name，f的type还是未知
+		ipc_send(envid, r, 0, 0);
+		return;
+	}
+	f->f_type = rq->f_type;
+	ipc_send(envid, 0, 0, 0);
 }
 
 /*
@@ -353,7 +357,7 @@ void serve_copy(u_int envid, struct Fsreq_copy *rq){
 void *serve_table[MAX_FSREQNO] = {
     [FSREQ_OPEN] = serve_open,	 [FSREQ_MAP] = serve_map,     [FSREQ_SET_SIZE] = serve_set_size,
     [FSREQ_CLOSE] = serve_close, [FSREQ_DIRTY] = serve_dirty, [FSREQ_REMOVE] = serve_remove,
-    [FSREQ_SYNC] = serve_sync,	[FSREQ_COPY] = serve_copy,
+    [FSREQ_SYNC] = serve_sync,   [FSREQ_CREATE] = serve_create,
 };
 
 /*
